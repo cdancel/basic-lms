@@ -178,7 +178,7 @@ class QuizController extends Controller
 
             $count_cert = QuizCertificate::whereBetween('created_at',[$date_now->startOfYear()->toDateString(),$date_now->endOfYear()->toDateString()])->count()+1;
             $certificate = QuizCertificate::create([
-                'control_num' => 'PTRO-'.$date_now->year.'-'.Course::find($request->course_id)->code.'-'.str_pad($count_cert, 3, "0", STR_PAD_LEFT),
+                'control_num' => 'PTRO-'.$date_now->year.'-'.str_pad($count_cert, 4, "0", STR_PAD_LEFT),
                 'employee_quiz_id' => $quiz->id
             ]);
 
@@ -217,6 +217,13 @@ class QuizController extends Controller
                     'position' => $quiz->EmployeeQuiz->employee->position->position_title,
                     'body' => 'for participating in the Basic Life Support Training held on the '.$cert_date->format('jS').' day of '.$cert_date->format('F Y').' at the Mariano Marcos Memorial Hospital and Medical Center Online Learning Management System.'
                 ]);
+            else if($quiz->EmployeeQuiz->course->course->id == 4)
+                $fields = array_merge($fields, [
+                    'control_num' => 'Control No.: '.$quiz->control_num,
+                    'position' => $quiz->EmployeeQuiz->employee->position->position_title,
+                    'body' => $cert_date->toFormattedDateString()
+                ]);
+
             $pdf = new FPDM(public_path($cert));
             $pdf->Load($fields, true);
             $pdf->Merge();
@@ -312,7 +319,7 @@ class QuizController extends Controller
             'verified_at' => $date_now->toDateTimeString()
         ]);
         
-        $count_cert = QuizCertificate::whereBetween('created_at',[$date_now->startOfYear()->toDateString(),$date_now->endOfYear()->toDateString()])->count()+266;
+        $count_cert = QuizCertificate::whereBetween('created_at',[$date_now->startOfYear()->toDateString(),$date_now->endOfYear()->toDateString()])->count()+1;
         $quizCertificate = QuizCertificate::create([
                 'control_num' => 'PTRO-'.$date_now->year.'-'.str_pad($count_cert, 3, "0", STR_PAD_LEFT),
                 'employee_quiz_id' => $quiz->id

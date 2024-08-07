@@ -142,7 +142,6 @@ class CourseController extends Controller
             $attempts = EmployeeQuiz::where([
                 ['emp_id',Auth::user()->emp_id], ['emp_course_id',$employeeCourse->id], ['quiz_type',$module->module_type]
             ])->orderBy('created_at')->get();
-            
             if(count($attempts)<count($passing)) {
 
                 if(count($attempts)>0) {
@@ -153,29 +152,33 @@ class CourseController extends Controller
                         }
                 }
                 if(!$passed) {
-                    $random = $course->quizzes->where('quiz_type', $module->module_type)->pluck('id')->toArray();
-                   
-                    if($module->module_type=='pre')
-                        if(count($random)<5) {
-                            $arr_q = $random;
-                        } else
-                            $arr_q = array_rand($random,5);
-                    else if($module->module_type=='post')
-                        if(count($random)<15) {
-                            $arr_q = $random;
-                        } else
-                            $arr_q = array_rand($random,15);
+                    if($course->id==4)
+                        $limit = 16;
+                    else
+                        $limit = $module->module_type=='pre' ? 5 : 15;
                     
-                    foreach($arr_q as $r) {
+                    $random = Quiz::where('quiz_type', $module->module_type)->where('course_id',$course->id)->get()->random($limit)->pluck('id')->toArray();
+                    shuffle($random);
+                    // if($module->module_type=='pre')
+                    //     if(count($random)<5) {
+                    //         $arr_q = $random;
+                    //     } else
+                    //         $arr_q = array_rand($random,5);
+                    // else if($module->module_type=='post')
+                    //     if(count($random)<15) {
+                    //         $arr_q = $random;
+                    //     } else
+                    //         $arr_q = array_rand($random,15);
+                    foreach($random as $r) {
                         $q = Quiz::find($r);
                         
                         if($q)
                             array_push($questions,$q);
                         else {
                             if($module->module_type=='exam-pre')
-                                $add_q = $course->quizzes->whereNotIn('id', $arr_q)->where('quiz_type','pre')->first();
+                                $add_q = Quiz::whereNotIn('id', $arr_q)->where('quiz_type','pre')->where('course_id',$course->id)->first();
                             else
-                                $add_q = $course->quizzes->whereNotIn('id', $arr_q)->where('quiz_type','post')->first();
+                                $add_q = Quiz::whereNotIn('id', $arr_q)->where('quiz_type','post')->where('course_id',$course->id)->first();
                             array_push($questions,$add_q);
                         }
                     }
@@ -218,18 +221,18 @@ class CourseController extends Controller
     {
         //
         $request->validate([
-            'code' => 'required|max:5',
+            //'code' => 'required|max:5',
             'course_name' => 'required|max:255',
             'course_slug' => 'required|unique:courses|max:50',
             'course_description' => 'required|max: 800',
-            'content' => 'required|max: 500',
+            'content' => 'required|max: 1500',
             'course_image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'course_certificate' => 'required|mimes:pdf'
         ]);
         $course = new Course;
         $course->course_name = $request->course_name;
         $course->course_slug = $request->course_slug;
-        $course->code = $request->code;
+        //$course->code = $request->code;
         $course->course_description = $request->course_description;
         $course->content = $request->content;
         $course->post_notes = $request->postnote;
@@ -246,6 +249,7 @@ class CourseController extends Controller
             $course->course_cert = $filename;         
         }
         $course->needs_verification = $request->needs_verification;
+        $course->is_active = false;
         $course->save();
         return redirect()->route('admin.courses.index')->with('message', 'Course successfully updated!');
     }
